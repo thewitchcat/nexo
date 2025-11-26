@@ -12,6 +12,7 @@ type Task = {
   assignedTo: number
 }
 
+const { $api } = useNuxtApp()
 const router = useRouter()
 
 const tasks = ref<Task[]>([])
@@ -35,9 +36,7 @@ const deleteTask = async () => {
   if (!selectedTask.value) return
 
   try {
-    await $fetch(`http://localhost:5015/tasks/${selectedTask.value.id}`, {
-      method: 'DELETE',
-    })
+    await $api.delete(`/tasks/${selectedTask.value.id}`)
 
     selectedTask.value = null
     await loadTasks()
@@ -48,21 +47,11 @@ const deleteTask = async () => {
 
 const loadTasks = async () => {
   try {
-    const data = await $fetch<Task[]>('http://localhost:5015/tasks')
+    const { data } = await $api.get('/tasks')
     tasks.value = data
   } catch (e) {
     console.error(e)
   }
-}
-
-// ------------------ //
-
-const { data, pending, error } = await useFetch<Task[]>(
-  'http://localhost:5015/tasks',
-)
-
-if (data.value) {
-  tasks.value = data.value
 }
 
 onMounted(async () => {
@@ -89,7 +78,7 @@ onMounted(async () => {
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody v-if="pending">
+      <tbody v-if="tasks.length === 0">
         <tr>
           <td colspan="4" style="text-align: center">Loading...</td>
         </tr>

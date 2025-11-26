@@ -14,6 +14,8 @@ type Task = {
 
 type TaskForm = Omit<Task, 'id'>
 
+const { $api } = useNuxtApp()
+
 const router = useRouter()
 const route = useRoute()
 
@@ -31,17 +33,27 @@ const form = ref<TaskForm>({
 })
 
 const submitForm = async () => {
-  const url = isNew
-    ? 'http://localhost:5015/tasks'
-    : `http://localhost:5015/tasks/${route.params.taskId}`
-
   try {
-    await $fetch(url, {
-      method: isNew ? 'POST' : 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(form.value),
+    isNew ? await $api.post('/tasks', {
+      title: form.value.title,
+      description: form.value.description,
+      type: form.value.type,
+      status: form.value.status,
+      priority: form.value.priority,
+      dueDate: form.value.dueDate,
+      projectId: form.value.projectId,
+      createdBy: form.value.createdBy,
+      assignedTo: form.value.assignedTo,
+    }) : await $api.put(`/tasks/${route.params.taskId}`, {
+      title: form.value.title,
+      description: form.value.description,
+      type: form.value.type,
+      status: form.value.status,
+      priority: form.value.priority,
+      dueDate: form.value.dueDate,
+      projectId: form.value.projectId,
+      createdBy: form.value.createdBy,
+      assignedTo: form.value.assignedTo,
     })
 
     form.value = {
@@ -62,27 +74,20 @@ const submitForm = async () => {
   }
 }
 
-// ------------------ //
-
 if (!isNew) {
-  const { data, error } = await useFetch<Task>(
-    `http://localhost:5015/tasks/${route.params.taskId}`,
-  )
-  if (error.value) {
-    console.error(error.value)
-  }
+  const { data } = await $api.get(`/tasks/${route.params.taskId}`)
 
-  if (data.value) {
+  if (data) {
     form.value = {
-      title: data.value.title ?? '',
-      description: data.value.description ?? '',
-      type: data.value.type ?? '',
-      status: data.value.status ?? '',
-      priority: data.value.priority ?? '',
-      dueDate: data.value.dueDate ?? '',
-      projectId: data.value.projectId ?? 0,
-      createdBy: data.value.createdBy ?? 0,
-      assignedTo: data.value.assignedTo ?? 0,
+      title: data.title ?? '',
+      description: data.description ?? '',
+      type: data.type ?? '',
+      status: data.status ?? '',
+      priority: data.priority ?? '',
+      dueDate: data.dueDate ?? '',
+      projectId: data.projectId ?? 0,
+      createdBy: data.createdBy ?? 0,
+      assignedTo: data.assignedTo ?? 0,
     }
   }
 }
