@@ -13,6 +13,16 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+  options.AddPolicy("AllowNuxt",
+    builder => builder
+      .WithOrigins("http://localhost:3000")
+      .AllowAnyHeader()
+      .AllowAnyMethod()
+      .AllowCredentials());
+});
+
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer((document, context, ct) =>
@@ -64,6 +74,7 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+app.UseCors("AllowNuxt");
 app.UseAuthentication();
 app.UseAuthorization();
 
