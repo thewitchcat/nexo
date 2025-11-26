@@ -6,6 +6,7 @@ type Project = {
   createdBy: number
 }
 
+const { $api } = useNuxtApp()
 const router = useRouter()
 
 const projects = ref<Project[]>([])
@@ -29,9 +30,7 @@ const deleteProject = async () => {
   if (!selectedProject.value) return
 
   try {
-    await $fetch(`http://localhost:5015/projects/${selectedProject.value.id}`, {
-      method: 'DELETE',
-    })
+    await $api.delete(`/projects/${selectedProject.value.id}`)
 
     selectedProject.value = null
     await loadProjects()
@@ -42,21 +41,11 @@ const deleteProject = async () => {
 
 const loadProjects = async () => {
   try {
-    const data = await $fetch<Project[]>('http://localhost:5015/projects')
+    const { data } = await $api.get('/projects')
     projects.value = data
   } catch (e) {
     console.error(e)
   }
-}
-
-// ------------------ //
-
-const { data, pending, error } = await useFetch<Project[]>(
-  'http://localhost:5015/projects',
-)
-
-if (data.value) {
-  projects.value = data.value
 }
 
 onMounted(async () => {
@@ -77,7 +66,7 @@ onMounted(async () => {
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody v-if="pending">
+      <tbody v-if="projects.length === 0">
         <tr>
           <td colspan="4" style="text-align: center">Loading...</td>
         </tr>

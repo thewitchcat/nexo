@@ -8,6 +8,8 @@ type Project = {
 
 type ProjectForm = Omit<Project, 'id'>
 
+const { $api } = useNuxtApp()
+
 const router = useRouter()
 const route = useRoute()
 
@@ -19,17 +21,15 @@ const form = ref<ProjectForm>({
 })
 
 const submitForm = async () => {
-  const url = isNew
-    ? 'http://localhost:5015/projects'
-    : `http://localhost:5015/projects/${route.params.projectId}`
-
   try {
-    await $fetch(url, {
-      method: isNew ? 'POST' : 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(form.value),
+    isNew ? await $api.post('/projects', { 
+      name: form.value.name,
+      description: form.value.description,
+      createdBy: form.value.createdBy,
+    }) : await $api.put(`/projects/${route.params.projectId}`, {
+      name: form.value.name,
+      description: form.value.description,
+      createdBy: form.value.createdBy,
     })
 
     form.value = {
@@ -44,21 +44,14 @@ const submitForm = async () => {
   }
 }
 
-// ------------------ //
-
 if (!isNew) {
-  const { data, error } = await useFetch<Project>(
-    `http://localhost:5015/projects/${route.params.projectId}`,
-  )
-  if (error.value) {
-    console.error(error.value)
-  }
+  const { data } = await $api.get(`/projects/${route.params.projectId}`)
 
-  if (data.value) {
+  if (data) {
     form.value = {
-      name: data.value.name ?? '',
-      description: data.value.description ?? '',
-      createdBy: data.value.createdBy ?? 0,
+      name: data.name ?? '',
+      description: data.description ?? '',
+      createdBy: data.createdBy ?? 0,
     }
   }
 }
