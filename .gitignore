@@ -1,20 +1,17 @@
 ############################
-# Node / Angular Frontend
+# Node / General
 ############################
 
-# Compiled output
-dist/
-tmp/
-out-tsc/
-bazel-out/
-
-# Node
+# Dependencies
 node_modules/
-npm-debug.log
-yarn-error.log
 
-# Angular cache
-.angular/cache/
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs
+*.log
 
 # Misc
 sass-cache/
@@ -25,9 +22,29 @@ testem.log
 typings/
 __screenshots__/
 
+
 ############################
-# Visual Studio Code
+# Nuxt / Production Build
 ############################
+.output/
+dist/
+.nuxt/
+.cache/
+
+
+############################
+# Environment Files
+############################
+.env
+.env.*
+!.env.example
+
+
+############################
+# Editors
+############################
+
+# VS Code
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -35,12 +52,7 @@ __screenshots__/
 !.vscode/extensions.json
 .history/*
 
-# VS Code workspace files
-*.code-workspace
-
-############################
-# IDEs
-############################
+# Eclipse / IntelliJ / Etc.
 .idea/
 .project
 .classpath
@@ -48,6 +60,14 @@ __screenshots__/
 *.launch
 .settings/
 *.sublime-workspace
+
+# Other editor/project files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
 
 ############################
 # System files
