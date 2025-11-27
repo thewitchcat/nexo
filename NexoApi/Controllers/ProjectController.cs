@@ -58,12 +58,13 @@ public static class ProjectController
             db.Projects.Add(project);
             await db.SaveChangesAsync();
 
+            var newCreatedProject = await db.Projects.Include(p => p.User).FirstOrDefaultAsync(p => p.Id == project.Id);
             var res = new ProjectResponseDto
             {
-                Id = project.Id,
-                Name = project.Name,
-                Description = project.Description,
-                CreatedBy = project.CreatedBy
+                Id = newCreatedProject!.Id,
+                Name = newCreatedProject.Name,
+                Description = newCreatedProject.Description,
+                CreatedBy = newCreatedProject.User.Name
             };
 
             return TypedResults.Created($"/projects/{res.Id}", res);
@@ -71,13 +72,13 @@ public static class ProjectController
 
         static async Task<Ok<ProjectResponseDto[]>> GetProjectsAsync(NexoDb db)
         {
-            var projects = await db.Projects.ToListAsync();
+            var projects = await db.Projects.Include(p => p.User).ToListAsync();
             var res = projects.Select(p => new ProjectResponseDto
             {
                 Id = p.Id,
                 Name = p.Name,
                 Description = p.Description,
-                CreatedBy = p.CreatedBy
+                CreatedBy = p.User.Name
             }).ToArray();
 
             return TypedResults.Ok(res);
@@ -85,14 +86,14 @@ public static class ProjectController
 
         static async Task<Results<Ok<ProjectResponseDto>, NotFound>> GetProjectByIdAsync(NexoDb db, int id)
         {
-            if (await db.Projects.FindAsync(id) is Project project)
+            if (await db.Projects.Include(p => p.User).FirstOrDefaultAsync(p => p.Id == id) is Project project)
             {
                 var res = new ProjectResponseDto
                 {
                     Id = project.Id,
                     Name = project.Name,
                     Description = project.Description,
-                    CreatedBy = project.CreatedBy
+                    CreatedBy = project.User.Name
                 };
 
                 return TypedResults.Ok(res);
