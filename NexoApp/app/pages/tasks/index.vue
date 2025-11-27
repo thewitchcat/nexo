@@ -3,6 +3,13 @@ definePageMeta({
   middleware: 'auth'
 })
 
+type User = {
+  id: number
+  name: string
+  email: string
+  role: string
+}
+
 type Task = {
   id: number
   title: string
@@ -19,6 +26,7 @@ type Task = {
 const { $api } = useNuxtApp()
 const router = useRouter()
 
+const currentLoggedInUser = ref<User | null>(null)
 const tasks = ref<Task[]>([])
 const isDeleteDialogVisible = ref(false)
 const selectedTask = ref<Task | null>(null)
@@ -51,14 +59,29 @@ const deleteTask = async () => {
 
 const loadTasks = async () => {
   try {
-    const { data } = await $api.get('/tasks')
-    tasks.value = data
+    if (currentLoggedInUser.value?.role === 'pm') {
+      const { data } = await $api.get('/tasks')
+      tasks.value = data
+    } else {
+      const { data } = await $api.get(`/tasks?assignedTo=${currentLoggedInUser.value?.id}`)
+      tasks.value = data
+    }    
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const loadCurentLoggedInUser = async () => {
+  try {
+    const { data } = await $api.get('/auth/me')
+    currentLoggedInUser.value = data
   } catch (e) {
     console.error(e)
   }
 }
 
 onMounted(async () => {
+  await loadCurentLoggedInUser()
   await loadTasks()
 })
 </script>

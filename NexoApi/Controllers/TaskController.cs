@@ -49,7 +49,6 @@ public static class TaskController
         // PATCH "/tasks/:taskId/priority"
 
         // GET "/tasks?projectId=1"
-        // GET "/tasks?assignedTo=6"
         // GET "/tasks?status=open"
         // GET "/tasks?type=bug"
         // GET "/tasks?priority=high"
@@ -90,9 +89,15 @@ public static class TaskController
             return TypedResults.Created($"/tasks/{res.Id}", res);
         }
 
-        static async Task<Ok<TaskResponseDto[]>> GetTasksAsync(NexoDb db)
+        static async Task<Ok<TaskResponseDto[]>> GetTasksAsync(NexoDb db, int? assignedTo)
         {
-            var tasks = await db.Tasks.ToListAsync();
+            var query = db.Tasks.AsQueryable();
+            if (assignedTo.HasValue)
+            {
+                query = query.Where(t => t.AssignedTo == assignedTo);
+            }
+
+            var tasks = await query.ToListAsync();
             var res = tasks.Select(t => new TaskResponseDto
             {
                 Id = t.Id,
