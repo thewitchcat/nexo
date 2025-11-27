@@ -72,18 +72,24 @@ public static class TaskController
             db.Tasks.Add(task);
             await db.SaveChangesAsync();
 
+            var newCreatedTask = await db.Tasks
+                .Include(t => t.Project)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.AssignedToUser)
+                .FirstOrDefaultAsync(t => t.Id == task.Id);
+            
             var res = new TaskResponseDto
             {
-                Id = task.Id,
-                Title = task.Title,
-                Description = task.Description,
-                Type = task.Type,
-                Status = task.Status,
-                Priority = task.Priority,
-                DueDate = task.DueDate,
-                ProjectId = task.ProjectId,
-                CreatedBy = task.CreatedBy,
-                AssignedTo = task.AssignedTo
+                Id = newCreatedTask!.Id,
+                Title = newCreatedTask.Title,
+                Description = newCreatedTask.Description,
+                Type = newCreatedTask.Type,
+                Status = newCreatedTask.Status,
+                Priority = newCreatedTask.Priority,
+                DueDate = newCreatedTask.DueDate,
+                ProjectId = newCreatedTask.Project.Name,
+                CreatedBy = newCreatedTask.CreatedByUser.Name,
+                AssignedTo = newCreatedTask.AssignedToUser.Name
             };
 
             return TypedResults.Created($"/tasks/{res.Id}", res);
@@ -97,7 +103,12 @@ public static class TaskController
                 query = query.Where(t => t.AssignedTo == assignedTo);
             }
 
-            var tasks = await query.ToListAsync();
+            var tasks = await query
+                .Include(t => t.Project)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.AssignedToUser)
+                .ToListAsync();
+
             var res = tasks.Select(t => new TaskResponseDto
             {
                 Id = t.Id,
@@ -107,9 +118,9 @@ public static class TaskController
                 Status = t.Status,
                 Priority = t.Priority,
                 DueDate = t.DueDate,
-                ProjectId = t.ProjectId,
-                CreatedBy = t.CreatedBy,
-                AssignedTo = t.AssignedTo
+                ProjectId = t.Project.Name,
+                CreatedBy = t.CreatedByUser.Name,
+                AssignedTo = t.AssignedToUser.Name
             }).ToArray();
 
             return TypedResults.Ok(res);
@@ -117,7 +128,13 @@ public static class TaskController
 
         static async Task<Results<Ok<TaskResponseDto>, NotFound>> GetTaskByIdAsync(NexoDb db, int id)
         {
-            if (await db.Tasks.FindAsync(id) is Models.Task task)
+            if (
+                await db.Tasks
+                    .Include(t => t.Project)
+                    .Include(t => t.CreatedByUser)
+                    .Include(t => t.AssignedToUser)
+                    .FirstOrDefaultAsync(t => t.Id == id) is Models.Task task
+            )
             {
                 var res = new TaskResponseDto
                 {
@@ -128,9 +145,9 @@ public static class TaskController
                     Status = task.Status,
                     Priority = task.Priority,
                     DueDate = task.DueDate,
-                    ProjectId = task.ProjectId,
-                    CreatedBy = task.CreatedBy,
-                    AssignedTo = task.AssignedTo
+                    ProjectId = task.Project.Name,
+                    CreatedBy = task.CreatedByUser.Name,
+                    AssignedTo = task.AssignedToUser.Name
                 };
 
                 return TypedResults.Ok(res);

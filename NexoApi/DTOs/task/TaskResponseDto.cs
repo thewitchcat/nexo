@@ -9,7 +9,7 @@ public class TaskResponseDto
     public required string Status { get; set; }
     public required string Priority { get; set; }
     public DateOnly DueDate { get; set; }
-    public int ProjectId { get; set; }
-    public int CreatedBy { get; set; }
-    public int? AssignedTo { get; set; }
+    public required string ProjectId { get; set; }
+    public required string CreatedBy { get; set; }
+    public string? AssignedTo { get; set; }
 }
