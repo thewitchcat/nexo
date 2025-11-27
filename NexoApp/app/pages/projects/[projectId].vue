@@ -3,11 +3,17 @@ definePageMeta({
   middleware: 'auth'
 })
 
+type User = {
+  id: number
+  name: string
+  email: string
+  role: string
+}
+
 type Project = {
   id: number
   name: string
   description: string
-  createdBy: number
 }
 
 type ProjectForm = Omit<Project, 'id'>
@@ -17,11 +23,21 @@ const { $api } = useNuxtApp()
 const router = useRouter()
 const route = useRoute()
 
+const currentLoggedInUser = ref<User | null>(null)
+const loadCurentLoggedInUser = async () => {
+  try {
+    const { data } = await $api.get('/auth/me')
+    currentLoggedInUser.value = data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const userId = ref(0)
 const isNew = route.params.projectId === 'new'
 const form = ref<ProjectForm>({
   name: '',
   description: '',
-  createdBy: 0,
 })
 
 const submitForm = async () => {
@@ -29,18 +45,19 @@ const submitForm = async () => {
     isNew ? await $api.post('/projects', { 
       name: form.value.name,
       description: form.value.description,
-      createdBy: form.value.createdBy,
+      createdBy: userId.value,
     }) : await $api.put(`/projects/${route.params.projectId}`, {
       name: form.value.name,
       description: form.value.description,
-      createdBy: form.value.createdBy,
+      createdBy: userId.value,
     })
 
     form.value = {
       name: '',
       description: '',
-      createdBy: 0,
     }
+
+    userId.value = 0
 
     router.push('/projects')
   } catch (e) {
@@ -55,17 +72,25 @@ if (!isNew) {
     form.value = {
       name: data.name ?? '',
       description: data.description ?? '',
-      createdBy: data.createdBy ?? 0,
     }
+
+    userId.value = data.createdBy ?? 0
   }
 }
+
+
+loadCurentLoggedInUser();
+onMounted(() => {
+  if (currentLoggedInUser.value !== null) userId.value = currentLoggedInUser.value.id
+})
 </script>
 
 <template>
   <div>
     <h1>{{ isNew ? 'Add new project' : 'Edit project' }}</h1>
 
-    <form @submit.prevent="submitForm">
+    <div v-if="currentLoggedInUser === null">Loading...</div>
+    <form @submit.prevent="submitForm" v-else>
       <label for="name"
         >Name
         <input type="text" id="name" v-model="form.name" autofocus required />
@@ -81,12 +106,12 @@ if (!isNew) {
         />
       </label>
 
-      <label for="created-by"
+      <label for="created-by" style="display: none;"
         >Created by
         <input
           type="number"
           id="created-by"
-          v-model="form.createdBy"
+          v-model="userId"
           required
         />
       </label>
