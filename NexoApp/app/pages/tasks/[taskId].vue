@@ -3,6 +3,19 @@ definePageMeta({
   middleware: 'auth'
 })
 
+type Project = {
+  id: number
+  name: string
+  description: string
+}
+
+type User = {
+  id: number
+  name: string
+  email: string
+  role: string
+}
+
 type Task = {
   id: number
   title: string
@@ -12,7 +25,6 @@ type Task = {
   priority: string
   dueDate: string
   projectId: number
-  createdBy: number
   assignedTo: number
 }
 
@@ -23,6 +35,37 @@ const { $api } = useNuxtApp()
 const router = useRouter()
 const route = useRoute()
 
+const projects = ref<Project[] | null>(null)
+const loadProjects = async () => {
+  try {
+    const { data } = await $api.get('/projects')
+    projects.value = data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const users = ref<User[] | null>(null)
+const loadUsers = async () => {
+  try {
+    const { data } = await $api.get('/users?role=employee')
+    users.value = data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const currentLoggedInUser = ref<User | null>(null)
+const loadCurentLoggedInUser = async () => {
+  try {
+    const { data } = await $api.get('/auth/me')
+    currentLoggedInUser.value = data
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const userId = ref(0)
 const isNew = route.params.taskId === 'new'
 const form = ref<TaskForm>({
   title: '',
@@ -32,7 +75,6 @@ const form = ref<TaskForm>({
   priority: '',
   dueDate: '',
   projectId: 0,
-  createdBy: 0,
   assignedTo: 0,
 })
 
@@ -46,7 +88,7 @@ const submitForm = async () => {
       priority: form.value.priority,
       dueDate: form.value.dueDate,
       projectId: form.value.projectId,
-      createdBy: form.value.createdBy,
+      createdBy: userId.value,
       assignedTo: form.value.assignedTo,
     }) : await $api.put(`/tasks/${route.params.taskId}`, {
       title: form.value.title,
@@ -56,7 +98,7 @@ const submitForm = async () => {
       priority: form.value.priority,
       dueDate: form.value.dueDate,
       projectId: form.value.projectId,
-      createdBy: form.value.createdBy,
+      createdBy: userId.value,
       assignedTo: form.value.assignedTo,
     })
 
@@ -68,9 +110,10 @@ const submitForm = async () => {
       priority: '',
       dueDate: '',
       projectId: 0,
-      createdBy: 0,
       assignedTo: 0,
     }
+
+    userId.value = 0
 
     router.push('/tasks')
   } catch (e) {
@@ -80,6 +123,7 @@ const submitForm = async () => {
 
 if (!isNew) {
   const { data } = await $api.get(`/tasks/${route.params.taskId}`)
+  console.log(data)
 
   if (data) {
     form.value = {
@@ -90,11 +134,19 @@ if (!isNew) {
       priority: data.priority ?? '',
       dueDate: data.dueDate ?? '',
       projectId: data.projectId ?? 0,
-      createdBy: data.createdBy ?? 0,
       assignedTo: data.assignedTo ?? 0,
     }
+
+    userId.value = data.createdBy ?? 0
   }
 }
+
+loadCurentLoggedInUser();
+loadProjects()
+loadUsers()
+onMounted(() => {
+  if (currentLoggedInUser.value !== null) userId.value = currentLoggedInUser.value.id
+})
 </script>
 
 <template>
@@ -159,32 +211,44 @@ if (!isNew) {
 
       <label for="project"
         >Project
-        <input
+        <!-- <input
           type="number"
           id="project"
           v-model="form.projectId"
           required
-        />
+        /> -->
+        <select id="project" v-model="form.projectId">
+          <option value="0" selected disabled>-- Select project --</option>
+          <template v-for="project in projects" :key="project">
+             <option :value="project.id">{{ project.name }}</option>
+          </template>
+        </select>
       </label>
 
-      <label for="created-by"
+      <label for="created-by" style="display: none;"
         >Created by
         <input
           type="number"
           id="created-by"
-          v-model="form.createdBy"
+          v-model="userId"
           required
         />
       </label>
 
       <label for="assigned-to"
         >Assigned to
-        <input
+        <!-- <input
           type="number"
           id="assigned-to"
           v-model="form.assignedTo"
           required
-        />
+        /> -->
+        <select id="assigned-to" v-model="form.assignedTo">
+          <option value="0" selected disabled>-- Select Employee --</option>
+          <template v-for="user in users" :key="user">
+            <option :value="user.id">{{ user.name }}</option>
+          </template>
+        </select>
       </label>
 
       <button type="submit">{{ isNew ? 'Add' : 'Save changes' }}</button>

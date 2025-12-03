@@ -44,8 +44,6 @@ public static class UserController
           .RequireAuthorization();
 
         // I'm too lazy to implement this, I'll do it later 😂
-        // GET "/users?role=employee"
-        // GET "/users?role=pm"
         // PATCH "/users/{userId}/change-password
 
     }
@@ -74,9 +72,15 @@ public static class UserController
         return TypedResults.Created($"/users/{res.Id}", res);
     }
 
-    static async Task<Ok<UserResponseDto[]>> GetUsersAsync(NexoDb db)
+    static async Task<Ok<UserResponseDto[]>> GetUsersAsync(NexoDb db, string? role)
     {
-        var users = await db.Users.ToListAsync();
+        var query = db.Users.AsQueryable();
+        if (!string.IsNullOrEmpty(role))
+        {
+            query = query.Where(u => u.Role == role);
+        }
+
+        var users = await query.ToListAsync();
         var res = users.Select(u => new UserResponseDto
         {
             Id = u.Id,
